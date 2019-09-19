@@ -1,48 +1,51 @@
 <?php
 
+include 'conn.php';
+
 if(isset($_POST['signupBtn'])){
+	$username = trim($_POST['username']);
+	$email = trim($_POST['email']);
+	$passwd = password_hash($_POST['password'], PASSWORD_DEFAULT);
+	$passwd1 = trim($_POST['password']);
+	$repeatPass = trim($_POST['confirm_password']);
 
-	/**File to store user data*/
-	$fileDB = "datadb.json";
+	if ($passwd1 == $repeatPass) {#Checks if password matches with confirm_password
 
-	$retrieved_data = file_get_contents("datadb.json");
-    $decoded_data = json_decode($retrieved_data, true);
-   $decode_data_array = [];
+		$sql_query = "SELECT * FROM user WHERE email = '".$email."'";
+		$retrieve_user_data = mysqli_query($conn, $sql_query);
 
-   $decode_data_array = $decoded_data;
+		if(mysqli_num_rows($retrieve_user_data) == 0){
 
-    $email_exist = false;
-    
-	$data = [];
+			$userRow = mysqli_fetch_array($retrieve_user_data);
 
-	$formArray = $_POST; #retrieves the form values passed
+			if(!$userRow['email']){
+				#insert into the table user
+				$sql = "INSERT INTO user (username, email, user_password_hash) VALUES ('".$username."', '".$email."', '".$passwd."')";
 
-		foreach ($decode_data_array as $key => $value) {
+				if ($user = mysqli_query($conn, $sql)) {
+					
+					$sql_query1 = "SELECT * FROM user WHERE email = '".$email."'";
+					$user_data = mysqli_query($conn, $sql_query1);
 
-	    	if($decode_data_array['email'] === $formArray['email']){
-	    		$email_exist = true;
-	    		break;
-	    	}
-    	}
-
-    	if($email_exist){
-    		echo "<script>
-					alert('Email address entered already exist in database, please change your email');
-					window.location.href='index.html';
-					</script>";
-		}else{
-
-			$formArray['password'] = password_hash($formArray['password'], PASSWORD_DEFAULT); #Hash the password
-
-						#Removes the SignUpBtn since it is returning an empty value
-						unset($formArray['signupBtn'], $formArray['confirm_password']);
-						$json_data = json_encode($formArray); #Encode data to JSON/Object format
-			   
-				   /**Every new registration should be appended (i.e added to the next line of the previous)*/
-				   file_put_contents($fileDB, $json_data, FILE_APPEND);
-
-			        header('Location: welcome.php?email='.$formArray['email']); 
-			}				   
+					if(mysqli_num_rows($user_data) > 0){
+						$row = mysqli_fetch_array($user_data);
+					$user_id = $userRow['id'];	
+						#Insert into user_profile table
+					$user_profile = "INSERT INTO user_profile (user_id, full_name) VALUES ('".$user_id."', '".$username."')";
+					mysqli_query($conn, $user_profile);
+					header('Location: welcome.php?name='.$username);
+					}
+				}
+			}else{
+				echo "<script>
+				alert('Please the email already exist. Change your email to complete your registration');
+				window.location.href='index.html';</script>";
+			}
+		}
+	}else {
+		echo "<script>
+			alert('Password does mot match');
+			window.location.href='index.html';</script>";
+	}
 }
-
 ?>

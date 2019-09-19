@@ -39,7 +39,7 @@
     <div class="container">
         <h1 style="color: white; text-align: center">WELCOME,
             <p style="color:black;"><?php 
-                $name = $_GET['email'];
+                $name = $_GET['name'];
                 echo $name;
              ?></p>
         </h1>
